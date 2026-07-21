@@ -38,18 +38,11 @@ export function Quiz({ question, onResult, onNext }: Props) {
     if (status === 'idle') inputRef.current?.focus();
   }, [status]);
 
-  if (!question) {
-    return (
-      <div className="card empty-state">
-        <p>No verbs or forms are selected. Open settings and pick at least one of each.</p>
-      </div>
-    );
-  }
-
-  const formMeta = FORMS.find((f) => f.id === question.formId)!;
-  const answer = conjugate(question.verb, question.formId);
+  const formMeta = question ? FORMS.find((f) => f.id === question.formId)! : null;
+  const answer = question ? conjugate(question.verb, question.formId) : null;
 
   const check = () => {
+    if (!question || !answer) return;
     if (status !== 'idle') {
       onNext();
       return;
@@ -74,6 +67,14 @@ export function Quiz({ question, onResult, onNext }: Props) {
     window.addEventListener('keydown', handleWindowKeyDown);
     return () => window.removeEventListener('keydown', handleWindowKeyDown);
   });
+
+  if (!question || !formMeta || !answer) {
+    return (
+      <div className="card empty-state">
+        <p>No verbs or forms are selected. Open settings and pick at least one of each.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="card">
