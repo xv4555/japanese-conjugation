@@ -7,13 +7,24 @@ const CLASS_LABELS: Record<VerbClass, string> = {
   irregular: 'Irregular (する / 来る)',
 };
 
+const VERB_LIMIT_OPTIONS: { label: string; value: number | null }[] = [
+  { label: 'All verbs', value: null },
+  { label: 'Top 100', value: 100 },
+  { label: 'Top 200', value: 200 },
+  { label: 'Top 500', value: 500 },
+];
+
 interface Props {
   classes: Set<VerbClass>;
   categories: Set<string>;
+  verbLimit: number | null;
+  hideKana: boolean;
   onToggleClass: (c: VerbClass) => void;
   onToggleCategory: (c: string) => void;
   onSelectAllCategories: () => void;
   onClearCategories: () => void;
+  onChangeVerbLimit: (limit: number | null) => void;
+  onToggleHideKana: () => void;
   open: boolean;
   onClose: () => void;
 }
@@ -21,10 +32,14 @@ interface Props {
 export function Settings({
   classes,
   categories,
+  verbLimit,
+  hideKana,
   onToggleClass,
   onToggleCategory,
   onSelectAllCategories,
   onClearCategories,
+  onChangeVerbLimit,
+  onToggleHideKana,
   open,
   onClose,
 }: Props) {
@@ -50,6 +65,31 @@ export function Settings({
               </label>
             ))}
           </div>
+        </section>
+
+        <section>
+          <h3>Verb pool</h3>
+          <div className="checkbox-grid">
+            {VERB_LIMIT_OPTIONS.map((opt) => (
+              <label key={opt.label} className="checkbox-row">
+                <input
+                  type="radio"
+                  name="verb-limit"
+                  checked={verbLimit === opt.value}
+                  onChange={() => onChangeVerbLimit(opt.value)}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3>Reading practice</h3>
+          <label className="checkbox-row">
+            <input type="checkbox" checked={hideKana} onChange={onToggleHideKana} />
+            Hide kana (test kanji reading)
+          </label>
         </section>
 
         <section>

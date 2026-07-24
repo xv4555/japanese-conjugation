@@ -11,13 +11,17 @@ const ALL_CLASSES: VerbClass[] = ['godan', 'ichidan', 'irregular'];
 export default function App() {
   const [classes, setClasses] = useState<Set<VerbClass>>(new Set(ALL_CLASSES));
   const [categories, setCategories] = useState<Set<string>>(new Set(FORM_CATEGORIES));
-  const [question, setQuestion] = useState<Question | null>(() => pickQuestion(new Set(ALL_CLASSES), new Set(FORM_CATEGORIES)));
+  const [verbLimit, setVerbLimit] = useState<number | null>(null);
+  const [hideKana, setHideKana] = useState(false);
+  const [question, setQuestion] = useState<Question | null>(() =>
+    pickQuestion(new Set(ALL_CLASSES), new Set(FORM_CATEGORIES), null)
+  );
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [streak, setStreak] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const regenerate = (nextClasses: Set<VerbClass>, nextCategories: Set<string>) => {
-    setQuestion(pickQuestion(nextClasses, nextCategories, question));
+  const regenerate = (nextClasses: Set<VerbClass>, nextCategories: Set<string>, nextVerbLimit: number | null) => {
+    setQuestion(pickQuestion(nextClasses, nextCategories, nextVerbLimit, question));
   };
 
   const toggleClass = (c: VerbClass) => {
@@ -25,7 +29,7 @@ export default function App() {
     if (next.has(c)) next.delete(c);
     else next.add(c);
     setClasses(next);
-    regenerate(next, categories);
+    regenerate(next, categories, verbLimit);
   };
 
   const toggleCategory = (c: string) => {
@@ -33,19 +37,24 @@ export default function App() {
     if (next.has(c)) next.delete(c);
     else next.add(c);
     setCategories(next);
-    regenerate(classes, next);
+    regenerate(classes, next, verbLimit);
   };
 
   const selectAllCategories = () => {
     const next = new Set(FORM_CATEGORIES);
     setCategories(next);
-    regenerate(classes, next);
+    regenerate(classes, next, verbLimit);
   };
 
   const clearCategories = () => {
     const next = new Set<string>();
     setCategories(next);
-    regenerate(classes, next);
+    regenerate(classes, next, verbLimit);
+  };
+
+  const changeVerbLimit = (limit: number | null) => {
+    setVerbLimit(limit);
+    regenerate(classes, categories, limit);
   };
 
   const handleResult = (correct: boolean) => {
@@ -54,7 +63,7 @@ export default function App() {
   };
 
   const handleNext = () => {
-    setQuestion(pickQuestion(classes, categories, question));
+    setQuestion(pickQuestion(classes, categories, verbLimit, question));
   };
 
   const accuracy = score.total === 0 ? 0 : Math.round((score.correct / score.total) * 100);
@@ -88,7 +97,7 @@ export default function App() {
       </div>
 
       <main>
-        <Quiz question={question} onResult={handleResult} onNext={handleNext} />
+        <Quiz question={question} hideKana={hideKana} onResult={handleResult} onNext={handleNext} />
       </main>
 
       <Settings
@@ -96,10 +105,14 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         classes={classes}
         categories={categories}
+        verbLimit={verbLimit}
+        hideKana={hideKana}
         onToggleClass={toggleClass}
         onToggleCategory={toggleCategory}
         onSelectAllCategories={selectAllCategories}
         onClearCategories={clearCategories}
+        onChangeVerbLimit={changeVerbLimit}
+        onToggleHideKana={() => setHideKana((v) => !v)}
       />
     </div>
   );

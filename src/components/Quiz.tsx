@@ -5,13 +5,14 @@ import { conjugate, FORMS } from '../lib/conjugation';
 
 interface Props {
   question: Question | null;
+  hideKana: boolean;
   onResult: (correct: boolean) => void;
   onNext: () => void;
 }
 
 type Status = 'idle' | 'correct' | 'incorrect';
 
-export function Quiz({ question, onResult, onNext }: Props) {
+export function Quiz({ question, hideKana, onResult, onNext }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>('idle');
 
@@ -81,7 +82,7 @@ export function Quiz({ question, onResult, onNext }: Props) {
       <div className="form-label">{formMeta.label}</div>
       <div className="prompt">
         <span className="prompt-kanji">{question.verb.kanji}</span>
-        <span className="prompt-kana">（{question.verb.kana}）</span>
+        {!hideKana && <span className="prompt-kana">（{question.verb.kana}）</span>}
       </div>
       <div className="prompt-meaning">{question.verb.meaning}</div>
 

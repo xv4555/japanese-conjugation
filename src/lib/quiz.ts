@@ -11,16 +11,18 @@ export function availableFormIds(categories: Set<string>): FormId[] {
   return FORMS.filter((f) => categories.has(f.category)).map((f) => f.id);
 }
 
-export function availableVerbs(classes: Set<VerbClass>): Verb[] {
-  return VERBS.filter((v) => classes.has(v.class));
+export function availableVerbs(classes: Set<VerbClass>, verbLimit?: number | null): Verb[] {
+  const pool = verbLimit ? VERBS.slice(0, verbLimit) : VERBS;
+  return pool.filter((v) => classes.has(v.class));
 }
 
 export function pickQuestion(
   classes: Set<VerbClass>,
   categories: Set<string>,
+  verbLimit?: number | null,
   avoid?: Question | null
 ): Question | null {
-  const verbs = availableVerbs(classes);
+  const verbs = availableVerbs(classes, verbLimit);
   const formIds = availableFormIds(categories);
   if (verbs.length === 0 || formIds.length === 0) return null;
 
