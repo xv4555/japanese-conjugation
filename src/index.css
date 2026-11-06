@@ -144,6 +144,13 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.prompt::selection {
+  background: transparent;
 }
 
 .prompt-kanji {
@@ -151,11 +158,22 @@ body {
   font-weight: 700;
   line-height: 1.1;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: none;
+}
+
+.prompt-kanji::selection {
+  background: transparent;
+  color: inherit;
 }
 
 .prompt-kana {
   font-size: 1.1rem;
   color: var(--text-muted);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .prompt-meaning {
