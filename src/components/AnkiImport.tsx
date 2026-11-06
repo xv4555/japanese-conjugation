@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Verb } from '../lib/conjugation';
 import {
-  loadAnkiDatabase,
-  getDecksFromDb,
-  getCardsFromDeck,
+  checkAnkiConnect,
+  getDeckNames,
+  getCardsInDeck,
+} from '../lib/ankiconnect';
+import {
   detectVerbField,
   extractVerbsFromCards,
-  type AnkiDeck,
   type ExtractedVerbMatch,
 } from '../lib/anki';
 
@@ -15,78 +16,68 @@ interface Props {
 }
 
 export function AnkiImport({ onImport }: Props) {
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [decks, setDecks] = useState<AnkiDeck[]>([]);
-  const [selectedDeckId, setSelectedDeckId] = useState<number | null>(null);
+  const [decks, setDecks] = useState<string[]>([]);
+  const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
     extractedVerbs: ExtractedVerbMatch[];
     matchedCount: number;
     unmatchedCount: number;
   } | null>(null);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    const checkConnection = async () => {
+      setIsChecking(true);
+      try {
+        const available = await checkAnkiConnect();
+        setIsAvailable(available);
 
-    setIsLoading(true);
-    setError(null);
-    setDecks([]);
-    setSelectedDeckId(null);
-    setPreview(null);
-
-    try {
-      const db = await loadAnkiDatabase(file);
-      const loadedDecks = getDecksFromDb(db);
-
-      if (loadedDecks.length === 0) {
-        setError('No decks found in this Anki database');
-        return;
+        if (available) {
+          const deckNames = await getDeckNames();
+          setDecks(deckNames.filter(name => !name.startsWith('_')));
+          if (deckNames.length > 0) {
+            setSelectedDeck(deckNames[0]);
+          }
+          setError(null);
+        } else {
+          setError('AnkiConnect not found. Make sure Anki is running with the AnkiConnect add-on installed.');
+        }
+      } catch (err) {
+        setError(`Failed to connect to AnkiConnect: ${err instanceof Error ? err.message : String(err)}`);
+        setIsAvailable(false);
+      } finally {
+        setIsChecking(false);
       }
+    };
 
-      setDecks(loadedDecks);
-      setSelectedDeckId(loadedDecks[0].id);
-    } catch (err) {
-      setError(`Failed to load Anki database: ${err instanceof Error ? err.message : String(err)}`);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeckSelect = async (deckId: number) => {
-    setSelectedDeckId(deckId);
-    setPreview(null);
-    setError(null);
-  };
+    checkConnection();
+  }, []);
 
   const handleLoadDeck = async () => {
-    if (!selectedDeckId) return;
-
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-    if (!file) {
-      setError('Please select a file first');
-      return;
-    }
+    if (!selectedDeck) return;
 
     setIsLoading(true);
+    setError(null);
+    setPreview(null);
+
     try {
-      const db = await loadAnkiDatabase(file);
-      const cards = getCardsFromDeck(db, selectedDeckId);
+      const cards = await getCardsInDeck(selectedDeck);
 
       if (cards.length === 0) {
         setError('No cards found in this deck');
         return;
       }
 
-      const fieldIndex = detectVerbField(cards);
-      if (fieldIndex === null) {
+      const fieldInfo = detectVerbField(cards);
+      if (!fieldInfo) {
         setError('Could not detect verb field in deck cards');
         return;
       }
 
-      const extractedVerbs = extractVerbsFromCards(cards, fieldIndex);
+      const extractedVerbs = extractVerbsFromCards(cards, fieldInfo.fieldName);
       const matchedCount = extractedVerbs.filter(v => v.matched).length;
       const unmatchedCount = extractedVerbs.length - matchedCount;
 
@@ -97,7 +88,6 @@ export function AnkiImport({ onImport }: Props) {
       });
     } catch (err) {
       setError(`Failed to load deck: ${err instanceof Error ? err.message : String(err)}`);
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -116,67 +106,95 @@ export function AnkiImport({ onImport }: Props) {
     }
 
     onImport(verbs);
-    setDecks([]);
-    setSelectedDeckId(null);
+    setSelectedDeck(null);
     setPreview(null);
-    (document.querySelector('input[type="file"]') as HTMLInputElement).value = '';
+    setError(null);
   };
+
+  if (isChecking) {
+    return (
+      <section>
+        <h3>Import from Anki</h3>
+        <div className="anki-import-section">
+          <p className="loading-text">Checking for AnkiConnect...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!isAvailable) {
+    return (
+      <section>
+        <h3>Import from Anki</h3>
+        <div className="anki-import-section">
+          <div className="error-message">
+            AnkiConnect is not running. To use this feature:
+            <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              <li>Install the AnkiConnect add-on in Anki</li>
+              <li>Restart Anki</li>
+              <li>Refresh this page</li>
+            </ol>
+            <a href="https://github.com/FooBarQux/AnkiConnect" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              AnkiConnect on GitHub →
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>
-      <h3>Import from Anki deck</h3>
+      <h3>Import from Anki</h3>
 
       <div className="anki-import-section">
-        <div className="file-input-wrapper">
-          <label>
-            Select Anki database (collection.anki2):
-            <input type="file" accept=".anki2" onChange={handleFileSelect} disabled={isLoading} />
-          </label>
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-
-        {decks.length > 0 && (
-          <div className="deck-selection">
-            <label>
-              Select deck:
-              <select value={selectedDeckId || ''} onChange={(e) => handleDeckSelect(parseInt(e.target.value))}>
-                <option value="">Choose a deck...</option>
-                {decks.map((deck) => (
-                  <option key={deck.id} value={deck.id}>
-                    {deck.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button onClick={handleLoadDeck} disabled={!selectedDeckId || isLoading}>
-              {isLoading ? 'Loading...' : 'Load deck'}
-            </button>
-          </div>
-        )}
-
-        {preview && (
-          <div className="preview-section">
-            <div className="preview-stats">
-              <p>
-                <strong>Found {preview.extractedVerbs.length} unique verbs</strong>
-              </p>
-              <p>
-                <strong>{preview.matchedCount}</strong> matched to database
-              </p>
-              {preview.unmatchedCount > 0 && (
-                <p>
-                  <strong>{preview.unmatchedCount}</strong> not found in database (will be skipped)
-                </p>
-              )}
+        {decks.length === 0 ? (
+          <div className="error-message">No decks found in Anki</div>
+        ) : (
+          <>
+            <div className="deck-selection">
+              <label>
+                Select deck:
+                <select value={selectedDeck || ''} onChange={(e) => setSelectedDeck(e.target.value)}>
+                  <option value="">Choose a deck...</option>
+                  {decks.map((deck) => (
+                    <option key={deck} value={deck}>
+                      {deck}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button onClick={handleLoadDeck} disabled={!selectedDeck || isLoading}>
+                {isLoading ? 'Loading...' : 'Load deck'}
+              </button>
             </div>
 
-            {preview.matchedCount > 0 && (
-              <button onClick={handleApplyImport} className="apply-btn">
-                Apply {preview.matchedCount} verbs
-              </button>
+            {error && <div className="error-message">{error}</div>}
+
+            {preview && (
+              <div className="preview-section">
+                <div className="preview-stats">
+                  <p>
+                    <strong>Found {preview.extractedVerbs.length} unique verbs</strong>
+                  </p>
+                  <p>
+                    <strong>{preview.matchedCount}</strong> matched to database
+                  </p>
+                  {preview.unmatchedCount > 0 && (
+                    <p>
+                      <strong>{preview.unmatchedCount}</strong> not found (will be skipped)
+                    </p>
+                  )}
+                </div>
+
+                {preview.matchedCount > 0 && (
+                  <button onClick={handleApplyImport} className="apply-btn">
+                    Apply {preview.matchedCount} verbs
+                  </button>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </section>

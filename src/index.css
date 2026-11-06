@@ -325,25 +325,10 @@ body {
   gap: 12px;
 }
 
-.file-input-wrapper label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.loading-text {
+  margin: 0;
   font-size: 0.9rem;
-}
-
-.file-input-wrapper input[type="file"] {
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.file-input-wrapper input[type="file"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  color: var(--text-muted);
 }
 
 .deck-selection {
@@ -393,6 +378,16 @@ body {
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 0.9rem;
+}
+
+.error-message ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.error-message a {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .preview-section {
