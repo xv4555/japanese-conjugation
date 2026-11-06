@@ -75,17 +75,33 @@ export function Settings({
         <section>
           <h3>Verb pool</h3>
           <div className="checkbox-grid">
-            {VERB_LIMIT_OPTIONS.map((opt) => (
-              <label key={opt.label} className="checkbox-row">
-                <input
-                  type="radio"
-                  name="verb-limit"
-                  checked={verbLimit === opt.value}
-                  onChange={() => onChangeVerbLimit(opt.value)}
-                />
-                {opt.label}
+            {importedVerbs && importedVerbs.length > 0 && (
+              <label className="checkbox-row">
+                <input type="radio" name="verb-limit" checked={true} disabled />
+                Anki deck ({importedVerbs.length})
               </label>
-            ))}
+            )}
+            {VERB_LIMIT_OPTIONS.map((opt) => {
+              const isUsingAnki = !!(importedVerbs && importedVerbs.length > 0);
+              const isChecked = !isUsingAnki && (verbLimit === opt.value);
+              return (
+                <label key={opt.label} className="checkbox-row">
+                  <input
+                    type="radio"
+                    name="verb-limit"
+                    checked={isChecked}
+                    onChange={() => {
+                      if (isUsingAnki) {
+                        onImportVerbs([]);
+                      }
+                      onChangeVerbLimit(opt.value);
+                    }}
+                    disabled={isUsingAnki}
+                  />
+                  {opt.label}
+                </label>
+              );
+            })}
           </div>
         </section>
 
@@ -96,17 +112,6 @@ export function Settings({
             Hide kana (test kanji reading)
           </label>
         </section>
-
-        {importedVerbs && importedVerbs.length > 0 && (
-          <section>
-            <div className="section-header-row">
-              <h3>Current pool: Anki ({importedVerbs.length} verbs)</h3>
-              <button className="link-btn" onClick={() => onImportVerbs([])}>
-                Clear
-              </button>
-            </div>
-          </section>
-        )}
 
         <AnkiImport onImport={onImportVerbs} />
 
