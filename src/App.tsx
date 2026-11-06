@@ -23,7 +23,10 @@ export default function App() {
     return new Set(FORM_CATEGORIES);
   });
   const [verbLimit, setVerbLimit] = useState<number | null>(null);
-  const [hideKana, setHideKana] = useState(false);
+  const [hideKana, setHideKana] = useState(() => {
+    const saved = localStorage.getItem('hide-kana');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [importedVerbs, setImportedVerbs] = useState<Verb[] | null>(null);
   const [question, setQuestion] = useState<Question | null>(() =>
     pickQuestion(new Set(ALL_CLASSES), categories, null, null, importedVerbs)
@@ -133,7 +136,11 @@ export default function App() {
         onSelectAllCategories={selectAllCategories}
         onClearCategories={clearCategories}
         onChangeVerbLimit={changeVerbLimit}
-        onToggleHideKana={() => setHideKana((v) => !v)}
+        onToggleHideKana={() => {
+          const newValue = !hideKana;
+          setHideKana(newValue);
+          localStorage.setItem('hide-kana', JSON.stringify(newValue));
+        }}
         onImportVerbs={handleImportVerbs}
       />
     </div>
