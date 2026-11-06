@@ -1,5 +1,6 @@
-import type { VerbClass } from '../lib/conjugation';
+import type { VerbClass, Verb } from '../lib/conjugation';
 import { FORM_CATEGORIES } from '../lib/conjugation';
+import { AnkiImport } from './AnkiImport';
 
 const CLASS_LABELS: Record<VerbClass, string> = {
   godan: 'Godan (u-verbs)',
@@ -19,12 +20,14 @@ interface Props {
   categories: Set<string>;
   verbLimit: number | null;
   hideKana: boolean;
+  importedVerbs: Verb[] | null;
   onToggleClass: (c: VerbClass) => void;
   onToggleCategory: (c: string) => void;
   onSelectAllCategories: () => void;
   onClearCategories: () => void;
   onChangeVerbLimit: (limit: number | null) => void;
   onToggleHideKana: () => void;
+  onImportVerbs: (verbs: Verb[]) => void;
   open: boolean;
   onClose: () => void;
 }
@@ -34,12 +37,14 @@ export function Settings({
   categories,
   verbLimit,
   hideKana,
+  importedVerbs,
   onToggleClass,
   onToggleCategory,
   onSelectAllCategories,
   onClearCategories,
   onChangeVerbLimit,
   onToggleHideKana,
+  onImportVerbs,
   open,
   onClose,
 }: Props) {
@@ -91,6 +96,19 @@ export function Settings({
             Hide kana (test kanji reading)
           </label>
         </section>
+
+        {importedVerbs && importedVerbs.length > 0 && (
+          <section>
+            <div className="section-header-row">
+              <h3>Current pool: Anki ({importedVerbs.length} verbs)</h3>
+              <button className="link-btn" onClick={() => onImportVerbs([])}>
+                Clear
+              </button>
+            </div>
+          </section>
+        )}
+
+        <AnkiImport onImport={onImportVerbs} />
 
         <section>
           <div className="section-header-row">

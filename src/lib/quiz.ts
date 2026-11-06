@@ -11,7 +11,10 @@ export function availableFormIds(categories: Set<string>): FormId[] {
   return FORMS.filter((f) => categories.has(f.category)).map((f) => f.id);
 }
 
-export function availableVerbs(classes: Set<VerbClass>, verbLimit?: number | null): Verb[] {
+export function availableVerbs(classes: Set<VerbClass>, verbLimit?: number | null, importedVerbs?: Verb[] | null): Verb[] {
+  if (importedVerbs && importedVerbs.length > 0) {
+    return importedVerbs;
+  }
   const pool = verbLimit ? VERBS.slice(0, verbLimit) : VERBS;
   return pool.filter((v) => classes.has(v.class));
 }
@@ -20,9 +23,10 @@ export function pickQuestion(
   classes: Set<VerbClass>,
   categories: Set<string>,
   verbLimit?: number | null,
-  avoid?: Question | null
+  avoid?: Question | null,
+  importedVerbs?: Verb[] | null
 ): Question | null {
-  const verbs = availableVerbs(classes, verbLimit);
+  const verbs = availableVerbs(classes, verbLimit, importedVerbs);
   const formIds = availableFormIds(categories);
   if (verbs.length === 0 || formIds.length === 0) return null;
 
