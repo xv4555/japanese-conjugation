@@ -11,12 +11,22 @@ const ALL_CLASSES: VerbClass[] = ['godan', 'ichidan', 'irregular'];
 
 export default function App() {
   const [classes, setClasses] = useState<Set<VerbClass>>(new Set(ALL_CLASSES));
-  const [categories, setCategories] = useState<Set<string>>(new Set(FORM_CATEGORIES));
+  const [categories, setCategories] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('conjugation-forms');
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved));
+      } catch {
+        return new Set(FORM_CATEGORIES);
+      }
+    }
+    return new Set(FORM_CATEGORIES);
+  });
   const [verbLimit, setVerbLimit] = useState<number | null>(null);
   const [hideKana, setHideKana] = useState(false);
   const [importedVerbs, setImportedVerbs] = useState<Verb[] | null>(null);
   const [question, setQuestion] = useState<Question | null>(() =>
-    pickQuestion(new Set(ALL_CLASSES), new Set(FORM_CATEGORIES), null, null, importedVerbs)
+    pickQuestion(new Set(ALL_CLASSES), categories, null, null, importedVerbs)
   );
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [streak, setStreak] = useState(0);
@@ -39,18 +49,21 @@ export default function App() {
     if (next.has(c)) next.delete(c);
     else next.add(c);
     setCategories(next);
+    localStorage.setItem('conjugation-forms', JSON.stringify(Array.from(next)));
     regenerate(classes, next, verbLimit);
   };
 
   const selectAllCategories = () => {
     const next = new Set(FORM_CATEGORIES);
     setCategories(next);
+    localStorage.setItem('conjugation-forms', JSON.stringify(Array.from(next)));
     regenerate(classes, next, verbLimit);
   };
 
   const clearCategories = () => {
     const next = new Set<string>();
     setCategories(next);
+    localStorage.setItem('conjugation-forms', JSON.stringify(Array.from(next)));
     regenerate(classes, next, verbLimit);
   };
 
