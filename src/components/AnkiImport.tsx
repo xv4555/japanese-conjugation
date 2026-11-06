@@ -37,9 +37,15 @@ export function AnkiImport({ onImport }: Props) {
 
         if (available) {
           const deckNames = await getDeckNames();
-          setDecks(deckNames.filter(name => !name.startsWith('_')));
-          if (deckNames.length > 0) {
-            setSelectedDeck(deckNames[0]);
+          const filteredDecks = deckNames.filter(name => !name.startsWith('_'));
+          setDecks(filteredDecks);
+
+          // Try to restore previously selected deck from localStorage
+          const savedDeck = localStorage.getItem('anki-selected-deck');
+          if (savedDeck && filteredDecks.includes(savedDeck)) {
+            setSelectedDeck(savedDeck);
+          } else if (filteredDecks.length > 0) {
+            setSelectedDeck(filteredDecks[0]);
           }
           setError(null);
         } else {
@@ -155,7 +161,16 @@ export function AnkiImport({ onImport }: Props) {
             <div className="deck-selection">
               <label>
                 Select deck:
-                <select value={selectedDeck || ''} onChange={(e) => setSelectedDeck(e.target.value)}>
+                <select
+                  value={selectedDeck || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedDeck(value);
+                    if (value) {
+                      localStorage.setItem('anki-selected-deck', value);
+                    }
+                  }}
+                >
                   <option value="">Choose a deck...</option>
                   {decks.map((deck) => (
                     <option key={deck} value={deck}>
