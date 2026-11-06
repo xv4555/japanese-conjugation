@@ -25,6 +25,9 @@ async function invoke<T>(action: string, params?: Record<string, unknown>): Prom
   try {
     const response = await fetch(ANKICONNECT_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(request),
     });
 
@@ -40,15 +43,19 @@ async function invoke<T>(action: string, params?: Record<string, unknown>): Prom
 
     return data.result;
   } catch (err) {
-    throw new Error(`AnkiConnect error: ${err instanceof Error ? err.message : String(err)}`);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[AnkiConnect] ${action} failed:`, errMsg);
+    throw new Error(errMsg);
   }
 }
 
 export async function checkAnkiConnect(): Promise<boolean> {
   try {
     const version = await invoke<number>('version');
+    console.log('[AnkiConnect] Connected! Version:', version);
     return version >= 6;
-  } catch {
+  } catch (err) {
+    console.error('[AnkiConnect] Connection failed:', err);
     return false;
   }
 }
